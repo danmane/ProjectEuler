@@ -23,64 +23,47 @@ intGrid2Array xxs = array bounds vals where
 --intList2Array :: [[Int]] -> Array Int Int
 
 getP11Ans :: String -> Int
-getP11Ans s = 1 where
+getP11Ans s = maximum $ map product valseqs where
+	intGrid :: [[Int]]
 	intGrid = string2IntGrid s -- this will be a list of lists, where each sublist is 
 	-- represents a row
-	maxRows = maximum $ map maxFourProduct intGrid -- map the maxFourProduct over each row
-	maxCols = maximum $ map maxFourProduct $ transpose intGrid -- map the maxFourProduct over columns
+	nRows :: Int
+	nRows = length intGrid
+	nCols :: Int
+	nCols = (length . head) intGrid
+	intArray :: Array (Int, Int) Int
 	intArray = intGrid2Array intGrid -- an array (with O(1) reference)
-	getDiagIdx
+	sequences :: [[(Int, Int)]]
+	sequences = allIdxSequences (nRows, nCols) 4
 
-tTimes :: (Int, Int) -> Int -> (Int, Int)
-tTimes (a,b) x = (a*x, b*x)
+	valseqs :: [[Int]]
+	valseqs = map (map (intArray ! )) sequences
+
 
 tPlus :: (Int, Int) -> (Int, Int) -> (Int, Int)
 tPlus (a,b) (c,d) = (a+c, b+d)
 
-diagonalize :: (Int, Int) -> Int -> (Int, Int) -> [(Int, Int)]
-diagonalize step nSteps startCoord = [startCoord `tPlus` (step `tTimes` n) | n <- [0..nSteps-1]]
+getAdjIndicies :: Int -> (Int, Int) -> (Int, Int) -> [(Int, Int)]
+-- variables: nRemaining, coordinate, step size
+getAdjIndicies 0 _ _ = []
+getAdjIndicies nRemaining step coord = coord : getAdjIndicies (nRemaining - 1) step (coord `tPlus` step)  
 
-getDiagonalIndicies :: (Int, Int) -> Int -> [[(Int, Int)]]
--- takes the bounds of the array (assumed to use 0-based indexing)
--- also takes the direction of the x step (+1 corresponds to going right, 
--- -1 corresponds to going left)
--- then returns a list of lists of coordinate tuples, representing each list of 
--- diagonal indices in the array
-getDiagonalIndicies (xBound, yBound) xStep = map (filter inBounds) ds where
-	len = max xBound yBound
-	s1 = case xStep of
-		1  -> -len
-		-1 -> 0
-		_  -> error "Use 1 or -1 as xStep"
-	s2 = case xStep of
-		1  -> len
-		-1 -> 2*len
-		_  -> error "Use 1 or -1 as xStep"
-	start = [(0, c) | c <- [s1, s2]]
-	ds = map (diagonalize (1, xStep) len) start
-	inBounds (a,b) = (a>)
+allIdxSequences :: (Int, Int) -> Int -> [[(Int, Int)]]
+-- takes the (xBound, yBound) of the array and the size of each sequence. returns a list containing every list of index subsequence
+allIdxSequences (nRows, nCols) size = filter (all inBounds) seqs where
+	coords = [(x, y) | x <- [0..nRows-1], y <- [0..nCols-1]]
+	directions = [(0,1), (1,0), (1,1), (1, -1)]
+	seqs = [getAdjIndicies size direction coord | direction <- directions, coord <- coords]
+	inBounds (x,y) = (x >= 0) && (x < nRows) && (y >= 0) && (y < nCols)
+
+main = do 
+	gridStr <- readFile "p11_grid.txt"
+	let ans = getP11Ans gridStr
+	putStrLn $ show ans
 
 
-maxFourProduct :: [Int] -> Int
-maxFourProduct = maximum . fourProduct
-
-fourProduct :: [Int] -> [Int]
--- take a list of integers and return a list of every # multiplied by the three previous numbers
-fourProduct (a:b:c:xs) = fourProductR xs a b c where
-	fourProductR :: [Int] -> Int -> Int -> Int -> [Int]
-	-- keeps the 3 previous ints as function arguments 
-	fourProductR [] _ _ _ = []
-	fourProductR (x:xs) a b c = x * a * b * c : fourProductR xs x a b
-fourProduct _ = []
-
-
-
---testE = [((i,j), i + j) | i <- [0..3], j <- [0..3]]
-
---testI = ( (0,0), (3,3) )
-
---testA = array testI testE
 teststr = "1 2 3 \n 2 3 4"
+teststr2 = "1 2 3\n 2 3 4\n 4 5 9"
 
 test_string2Grid = string2Grid teststr == expected where
 	expected = [["1","2","3"],["2","3","4"]]
@@ -88,12 +71,13 @@ test_string2Grid = string2Grid teststr == expected where
 test_string2IntGrid = string2IntGrid teststr == expected where
 	expected = [[1,2,3],[2,3,4]] :: [[Int]]
 
-test_fourProduct = t1 && t2 where 
-	t1 = fourProduct [1,1,1,1,2,2,2,2] == [1,2,4,8,16] 
-	t2 = fourProduct [1,2,3] == []
+t_getAdjIndicies = getAdjIndicies 4 (1,1) (0,0) == [(0,0), (1,1), (2,2), (3,3)]
 
-t_diagonalize = t1 && t2 where
-	t1 = diagonalize (0,0) (1,1)  5 == [(0,0), (1,1), (2,2), (3,3), (4,4)]
-	t2 = diagonalize (0,5) (1,-1) 6 == [(0,5), (1,4), (2,3), (3,2), (4,1), (5,0)]
+t_allIdxSequences = t1 && t2 where
+	t1 = nub (allIdxSequences (3, 3) 1) == [[(a,b)] | a <- [0..2], b <- [0..2]]
+	pts2x2 = [(a,b) | a <- [0,1], b <- [0,1]]
+	expected = sort [[pts2x2 !! a, pts2x2 !! b] | a <- [0..2], b <- [a+1..3] ]
+	actual = sort (allIdxSequences (2, 2) 2)
+	t2 = expected == actual
 
-test = and [test_string2Grid, test_string2IntGrid, test_fourProduct, t_diagonalize]
+test = and [test_string2Grid, test_string2IntGrid, t_getAdjIndicies, t_allIdxSequences]
