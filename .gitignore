@@ -1,0 +1,4 @@
+*.o
+*.hi
+.DS_*
+Haskell/primes
