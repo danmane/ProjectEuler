@@ -1,4 +1,4 @@
 *.o
 *.hi
-.DS_*
+.DS_Store
 Haskell/primes
