@@ -48,19 +48,29 @@ parseStraightFlush h = case (parseStraight h, parseFlush h) of
   (Just c, Just _) -> Just $ StraightFlush c
   _                -> Nothing
 
+getRankCounts :: Hand -> [(Int, Rank)]
 getRankCounts = getCounts . getRanks
+
+getHandCounts :: Hand -> [Int]
+getHandCounts = map fst . getRankCounts
 
 parseFourKind :: Hand -> Maybe PokerHand
 parseFourKind h = if match h then Just FourKind biggest h else Nothing
 where
-  match = (== 4) . fst . head . getRankCounts 
+  match = (== 4) . fst . head . getRankCounts
   biggest = snd . head . getRankCounts
 
-parseFullHouse :: Hand -> MaybePokerHand
+parseFullHouse :: Hand -> Maybe PokerHand
 parseFullHouse h = if match h then Just FullHouse biggest secondBiggest else Nothing
 where
-  match = (== [3, 2]) $ map fst $ getRankCounts h
-  biggest = snd $ head $ getRankCounts h
+  match = (== [3, 2]) . map fst . getRankCounts
+  biggest =       snd $ head   $ getRankCounts $ h
+  secondBiggest = snd $ (!! 1) $ getRankCounts $ h
+
+parseThreeKind :: Hand -> Maybe PokerHand
+parseThreeKind h = if match h then Just ThreeKind a b c else Nothing
+where
+  match = (== [3, 2])
 
 getCounts :: Ord a => [a] -> [(Int, a)]
 getCounts xs = reverse . sort (foldr incrementCountList [] xs) where
