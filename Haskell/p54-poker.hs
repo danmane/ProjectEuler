@@ -58,16 +58,23 @@ parseRank c = case c of
   _ -> digitToInt c
 
 string2Winner :: String -> Player
-string2Winner = undefined
+string2Winner s = if (fst hands > snd hands) then Player1 else Player2 where
+  hands = string2Hands s
 
 string2Card :: String -> Card
-string2Card s = Card (parseRank (s !! 0)) (read (tail s))
+string2Card s = Card (parseRank $ head s) (read $ tail s)
 
-string2Cards :: String -> [Card]
-string2Cards = undefined
+string2Cards :: String -> ([Card], [Card])
+string2Cards = splitAt 5 . map string2Card . words
 
 string2Hands :: String -> (Hand, Hand)
-string2Hands = undefined
+string2Hands = applyTuple c2h . string2Cards
+
+applyTuple :: (a -> b) -> (a, a) -> (b, b)
+applyTuple f (a1, a2) = (f a1, f a2)
+
+c2h :: [Card] -> Hand
+c2h [c1, c2, c3, c4, c5] = Hand c1 c2 c3 c4 c5
 
 main :: IO ()
 main = undefined
