@@ -3,10 +3,10 @@ import Control.Monad
 import Data.Char
 
 import Data.List
-data Suit = D | C | S | H deriving (Eq, Read, Show, Ord, Enum)
+data Suit = D | C | S | H deriving (Eq, Read, Show, Enum)
 type Rank = Int
-data Card = Card Rank Suit deriving (Eq, Show, Ord)
-data Player = Player1 | Player2
+data Card = Card Rank Suit deriving (Eq, Show)
+data Player = Player1 | Player2 deriving Eq
 
 data Hand = Hand Card Card Card Card Card deriving Eq
 instance Ord Hand where
@@ -24,7 +24,7 @@ data PokerHand = HighCard      Rank Rank Rank Rank Rank
                  deriving (Eq, Ord)
 
 getCounts :: (Eq a, Ord a) => [a] -> [(Int, a)]
-getCounts = sort . map (length &&& head) . group . sort
+getCounts = reverse .sort . map (length &&& head) . group . sort
 
 parse :: Hand -> PokerHand
 parse h
@@ -55,6 +55,7 @@ parseRank c = case c of
   'K' -> 13
   'Q' -> 12
   'J' -> 11
+  'T' -> 10
   _ -> digitToInt c
 
 string2Winner :: String -> Player
@@ -77,9 +78,7 @@ c2h :: [Card] -> Hand
 c2h [c1, c2, c3, c4, c5] = Hand c1 c2 c3 c4 c5
 
 main :: IO ()
-main = undefined
---main = do
---  theString <- readFile "path"
---  let result = pureFunction theString
---  print result
---
+main = do
+  theString <- readFile "hands.txt"
+  let result = length $ filter (== Player1) $ map string2Winner $ lines $ theString
+  print result
