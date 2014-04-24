@@ -3,15 +3,13 @@ import Control.Monad
 
 
 import Data.List
-data Suit = D | C | S | H
+data Suit = D | C | S | H deriving Eq
 type Rank = Int
-data Card = Card Suit Rank
+data Card = Card Suit Rank deriving Eq
 
-data Hand = Hand Card Card Card Card Card
+data Hand = Hand Card Card Card Card Card deriving Eq
 instance Ord Hand where
-  h1 `compare` h2 = r1 `compare` r2
-  r1 = rankify . parse h1
-  r2 = rankify . parse h2
+  h1 `compare` h2 = (rankify $ parse h1) `compare` (rankify $ parse h2)
 
 data PokerHand = StraightFlush Rank
                | FourKind      Rank
@@ -47,7 +45,7 @@ parse h
     [(3, r), (2, _)]                              -> FullHouse r
     [(3, r1), (1, r2), (1, r3)]                   -> ThreeKind r1 r2 r3
     [(2, r1), (2, r2), (1, r3)]                   -> TwoPair   r1 r2 r3
-    [(2, r1), (1, r2), (1, r3), (1 r4)]           -> Pair      r1 r2 r3
+    [(2, r1), (1, r2), (1, r3), (1, r4)]          -> Pair      r1 r2 r3 r4
     [(1, r1), (1, r2), (1, r3), (1, r4), (1, r5)] -> HighCard  r1 r2 r3 r4 r5
   where
     isStraight = (== [0..4]) . uncurry map . (flip (-) . head &&& id)
@@ -56,16 +54,16 @@ parse h
     isFlush = (== 1) . length . nub . getSuits
 
 rankify :: PokerHand -> [Rank]
-rankify ph
-  | StraightFlush r1             = [9, r1]
-  | FourKind      r1             = [8, r1]
-  | FullHouse     r1 r2          = [7, r1, r2]
-  | Flush         r1             = [6, r1]
-  | Straight      r1             = [5, r1]
-  | ThreeKind     r1 r2 r3       = [4, r1, r2, r3]
-  | TwoPair       r1 r2 r3       = [3, r1, r2, r3]
-  | Pair          r1 r2 r3 r4    = [2, r1, r2, r3, r4]
-  | HighCard      r1 r2 r3 r4 r5 = [1, r1, r2, r3, r4, r5]
+rankify ph = case ph of
+  StraightFlush r1             -> [9, r1]
+  FourKind      r1             -> [8, r1]
+  FullHouse     r1             -> [7, r1]
+  Flush         r1             -> [6, r1]
+  Straight      r1             -> [5, r1]
+  ThreeKind     r1 r2 r3       -> [4, r1, r2, r3]
+  TwoPair       r1 r2 r3       -> [3, r1, r2, r3]
+  Pair          r1 r2 r3 r4    -> [2, r1, r2, r3, r4]
+  HighCard      r1 r2 r3 r4 r5 -> [1, r1, r2, r3, r4, r5]
 
 main :: IO ()
 main = print "hello"
