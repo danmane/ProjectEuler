@@ -1,39 +1,30 @@
 import Control.Arrow
 import Control.Monad
-
+import Data.Char
 
 import Data.List
-data Suit = D | C | S | H deriving Eq
+data Suit = D | C | S | H deriving (Eq, Read, Show, Ord, Enum)
 type Rank = Int
-data Card = Card Suit Rank deriving Eq
+data Card = Card Rank Suit deriving (Eq, Show, Ord)
+data Player = Player1 | Player2
 
 data Hand = Hand Card Card Card Card Card deriving Eq
 instance Ord Hand where
-  h1 `compare` h2 = (rankify $ parse h1) `compare` (rankify $ parse h2)
+  h1 `compare` h2 = (parse h1) `compare` (parse h2)
 
-data PokerHand = StraightFlush Rank
-               | FourKind      Rank
-               | FullHouse     Rank
-               | Flush         Rank
-               | Straight      Rank
-               | ThreeKind     Rank Rank Rank
-               | TwoPair       Rank Rank Rank
+data PokerHand = HighCard      Rank Rank Rank Rank Rank
                | Pair          Rank Rank Rank Rank
-               | HighCard      Rank Rank Rank Rank Rank
+               | TwoPair       Rank Rank Rank
+               | ThreeKind     Rank Rank Rank
+               | Straight      Rank
+               | Flush         Rank
+               | FullHouse     Rank
+               | FourKind      Rank
+               | StraightFlush Rank
+                 deriving (Eq, Ord)
 
 getCounts :: (Eq a, Ord a) => [a] -> [(Int, a)]
 getCounts = sort . map (length &&& head) . group . sort
-
-getRanks :: Hand -> [Rank]
-getRanks (Hand c1 c2 c3 c4 c5) = map getRank [c1, c2, c3, c4, c5] where
-  getRank (Card _ r) = r
-
-getSuits :: Hand -> [Suit]
-getSuits (Hand c1 c2 c3 c4 c5) = map getSuit [c1, c2, c3, c4, c5] where
-  getSuit (Card s _) = s
-
-getRankCounts :: Hand -> [(Int, Rank)]
-getRankCounts = getCounts . getRanks
 
 parse :: Hand -> PokerHand
 parse h
@@ -52,18 +43,36 @@ parse h
     sortedRanks = sort $ getRanks h
     maxRank = last sortedRanks
     isFlush = (== 1) . length . nub . getSuits
+    getSuits (Hand c1 c2 c3 c4 c5) = map getSuit [c1, c2, c3, c4, c5]
+    getSuit (Card _ s) = s
+    getRanks (Hand c1 c2 c3 c4 c5) = map getRank [c1, c2, c3, c4, c5]
+    getRank (Card r _) = r
+    getRankCounts = getCounts . getRanks
 
-rankify :: PokerHand -> [Rank]
-rankify ph = case ph of
-  StraightFlush r1             -> [9, r1]
-  FourKind      r1             -> [8, r1]
-  FullHouse     r1             -> [7, r1]
-  Flush         r1             -> [6, r1]
-  Straight      r1             -> [5, r1]
-  ThreeKind     r1 r2 r3       -> [4, r1, r2, r3]
-  TwoPair       r1 r2 r3       -> [3, r1, r2, r3]
-  Pair          r1 r2 r3 r4    -> [2, r1, r2, r3, r4]
-  HighCard      r1 r2 r3 r4 r5 -> [1, r1, r2, r3, r4, r5]
+parseRank :: Char -> Rank
+parseRank c = case c of
+  'A' -> 14
+  'K' -> 13
+  'Q' -> 12
+  'J' -> 11
+  _ -> digitToInt c
+
+string2Winner :: String -> Player
+string2Winner = undefined
+
+string2Card :: String -> Card
+string2Card s = Card (parseRank (s !! 0)) (read (tail s))
+
+string2Cards :: String -> [Card]
+string2Cards = undefined
+
+string2Hands :: String -> (Hand, Hand)
+string2Hands = undefined
 
 main :: IO ()
-main = print "hello"
+main = undefined
+--main = do
+--  theString <- readFile "path"
+--  let result = pureFunction theString
+--  print result
+--
