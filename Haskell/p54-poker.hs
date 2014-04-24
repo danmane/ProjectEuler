@@ -9,6 +9,9 @@ data Card = Card Suit Rank
 
 data Hand = Hand Card Card Card Card Card
 instance Ord Hand where
+  h1 `compare` h2 = r1 `compare` r2
+  r1 = rankify . parse h1
+  r2 = rankify . parse h2
 
 data PokerHand = StraightFlush Rank
                | FourKind      Rank
