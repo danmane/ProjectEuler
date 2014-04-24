@@ -6,8 +6,6 @@ import Data.List
 data Suit = D | C | S | H deriving (Eq, Read, Show, Enum)
 type Rank = Int
 data Card = Card Rank Suit deriving (Eq, Show)
-data Player = Player1 | Player2 deriving Eq
-
 data Hand = Hand Card Card Card Card Card deriving Eq
 instance Ord Hand where
   h1 `compare` h2 = (parse h1) `compare` (parse h2)
@@ -58,9 +56,8 @@ parseRank c = case c of
   'T' -> 10
   _ -> digitToInt c
 
-string2Winner :: String -> Player
-string2Winner s = if (fst hands > snd hands) then Player1 else Player2 where
-  hands = string2Hands s
+p1won :: (Hand, Hand) -> Bool
+p1won hands = fst hands > snd hands
 
 string2Card :: String -> Card
 string2Card s = Card (parseRank $ head s) (read $ tail s)
@@ -80,5 +77,5 @@ c2h [c1, c2, c3, c4, c5] = Hand c1 c2 c3 c4 c5
 main :: IO ()
 main = do
   theString <- readFile "hands.txt"
-  let result = length $ filter (== Player1) $ map string2Winner $ lines $ theString
+  let result = length $ filter p1won $ map string2Hands $ lines $ theString
   print result
