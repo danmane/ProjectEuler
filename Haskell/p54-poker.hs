@@ -1,3 +1,5 @@
+import Control.Arrow
+
 import Data.List
 data Suit = D | C | S | H
 type Rank = Int
@@ -17,90 +19,39 @@ data PokerHand = StraightFlush Rank
                | HighCard      Rank Rank Rank Rank Rank
 
 
-getSuit :: Card -> Suit
-getSuit (Card s _) = s
-
-getRank :: Card -> Int
-getRank (Card _ r) = r
+getCounts :: (Eq a, Ord a) => [a] -> [(Int, a)]
+getCounts = sort . map (length &&& head) . group . sort
 
 getRanks :: Hand -> [Rank]
-getRanks (Hand c1 c2 c3 c4 c5) = map getRank [c1, c2, c3, c4, c5]
+getRanks (Hand c1 c2 c3 c4 c5) = map getRank [c1, c2, c3, c4, c5] where
+  getRank (Card _ r) = r
 
 getSuits :: Hand -> [Suit]
-getSuits (Hand c1 c2 c3 c4 c5) = map getSuit [c1, c2, c3, c4, c5]
-
--- parseHand :: String -> Hand
--- parseHand s = h where
-
-parseStraight :: Hand -> Maybe PokerHand
-parseStraight h = if isStraight then Just $ Straight (last sorted) else Nothing
-  where
-    isStraight = [0..4] == map (+ (-smallest)) sorted
-    sorted@(smallest:_) = sort (getRanks h)
-
-parseFlush :: Hand -> Maybe PokerHand
-parseFlush h = if isFlush h then Just $ Flush (maximum (getRanks h)) else Nothing
-where
-  isFlush = (== 1) . length . nub . getSuits
-
-parseStraightFlush :: Hand -> Maybe PokerHand
-parseStraightFlush h = case (parseStraight h, parseFlush h) of
-  (Just c, Just _) -> Just $ StraightFlush c
-  _                -> Nothing
+getSuits (Hand c1 c2 c3 c4 c5) = map getSuit [c1, c2, c3, c4, c5] where
+  getSuit (Card s _) = s
 
 getRankCounts :: Hand -> [(Int, Rank)]
 getRankCounts = getCounts . getRanks
 
-getHandCounts :: Hand -> [Int]
-getHandCounts = map fst . getRankCounts
+parse :: Hand -> PokerHand
+parse h = case (parseStraight h, parseFlush h) of
+  (Just c, Just _) -> StraightFlush c
+  (Just c, _)      -> Straight c
+  (_, Just c)      -> Flush c
+  _ -> case getRankCounts h of
+    [(4, r), (1, _)] -> FourKind r
+    [(3, r), (2, _)] -> FullHouse r
+    [(3, r1), (1, r2), (1, r3)] -> ThreeKind r1 r2 r3
+    [(2, r1), (2, r2), (1, r3)] -> TwoPair r1 r2 r3
+    [(2, r1), (1, r2), (1, r3), (1 r4)] -> Pair r1 r2 r3
+    [(1, r1), (1, r2), (1, r3), (1, r4), (1, r5)] -> HighCard r1 r2 r3 r4 r5
+  where
+    parseStraight h = if isStraight then Just $ Straight (last sorted) else Nothing
+    isStraight = [0..4] == map (+ (-smallest)) sorted
+    sorted@(smallest:_) = sort (getRanks h)
 
-parseFourKind :: Hand -> Maybe PokerHand
-parseFourKind h = if match h then Just FourKind biggest h else Nothing
-where
-  match = (== 4) . fst . head . getRankCounts
-  biggest = snd . head . getRankCounts
-
-parseFullHouse :: Hand -> Maybe PokerHand
-parseFullHouse h = if match h then Just FullHouse biggest secondBiggest else Nothing
-where
-  match = (== [3, 2]) . map fst . getRankCounts
-  biggest =       snd $ head   $ getRankCounts $ h
-  secondBiggest = snd $ (!! 1) $ getRankCounts $ h
-
-parseThreeKind :: Hand -> Maybe PokerHand
-parseThreeKind h = if match h then Just ThreeKind a b c else Nothing
-where
-  match = (== [3, 2])
-
-getCounts :: Ord a => [a] -> [(Int, a)]
-getCounts xs = reverse . sort (foldr incrementCountList [] xs) where
-  incrementCountList :: Eq a => a -> [(a, Int)] -> [(a, Int)]
-  incrementCountList x [] = [(0, x)]
-  incrementCountList x ((c, e) : cs)
-    | e == x = (c+1, e) : cs
-    | otherwise = (c, e) : (incrementCountList cs)
-
-
-hand2PokerHand :: Hand -> PokerHand
-hand2PokerHand h = (getCons h) ranksSortedByCountThenRank where
-  countRankPairs = getCounts . getRanks h
-  counts = map fst countRankPairs
-  ranksSortedByCountThenRank = map snd countRankPairs
-  getCons :: Hand -> ([Int] -> PokerHand)
-  getCons h
-    | (isStraight h) && (isFlush h) = StraightFlush
-    | isStraight h                  = Straight
-    | isFlush h                     = Flush
-    | counts == [4, 1]              = FourKind
-    | counts == [3, 2]              = FullHouse
-    | counts == [3, 1, 1]           = ThreeKind
-    | counts == [2, 2, 1]           = TwoPair
-    | counts == [2, 1, 1, 1]        = Pair
-    | otherwise                     = HighCard
-
-
-isStraightFlush :: Hand -> Maybe PokerHand
-
+    parseFlush h = if isFlush h then Just $ Flush (maximum (getRanks h)) else Nothing
+    isFlush = (== 1) . length . nub . getSuits
 
 main :: IO ()
 main = print "hello"
